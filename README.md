@@ -1,6 +1,6 @@
 # Virtual File Cabinet
 
-This project contains code that goes along with the (#)[Virtual File Cabinet] article.
+This project contains code that goes along with the Virtual File Cabinet article.
 
 This code attempts to automate routine filing tasks.
 
@@ -28,11 +28,11 @@ The system does the following tasks
 - Scans the inbox directory for any files.
 - Each file in the inbox directory has text extracted from it. That text is then used with the NLP system to try to guess what directory the file should be placed in.
   - If the file does not match any of the current directories for any reason, it is renamed to "unclassified_XXXXXXXXXXXX.ext". The XXXXs are a unix timestamp - either from the first date found in the file, or from the date the process was run.
-  - When a directory is suggested for the file, a "score" is checked to determine how confident the NLP system is for the recommendation. If the score is strong enough, the file is moved into that directory. The file is also renamed. The name of the target directory is used, as well as a millisecond timestamp.
+  - When a directory is suggested for the file, a "score" is checked to determine how confident the NLP system is for the recommendation. If the score is strong enough, the file is moved into that directory. The file is also renamed. The name of the target directory is used, as well as a millisecond timestamp. Example - if the file was named "scanned_document.jpg" and the recommended directory was `/file_cabinet/payables/esso`, the file would be copied into that directory and named `esso_1600327553892.jpg`. The timestamp (with MS) is either the first date in the file, or the date the file was moved (if dates could not be found in the file).
 
 ### First Run
 
-If your first run has an impty file cabinet directory (other than the inbox directory) no files are moved. Any files in the inbox directory will be tagges as "unclassified". Afterall there is nothing for it to begin choosing directories from.
+If your first run has an empty file cabinet directory (other than the inbox directory) no files are moved. Any files in the inbox directory will be tagges as "unclassified". Afterall there is nothing for it to begin choosing directories from.
 
 If you pointed the file cabinet directory to an existing directory with files in it already, then the files in the inbox directory _may_ get moved into an appropriate directory.
 
