@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const imaps = require('imap-simple')
-const Config = require('./config.js')
+const Config = require('../config.js')
+const logger = require('./logging.js')
 
 // ----------
 // Functions
@@ -10,8 +11,10 @@ function saveAttachment(fname, content) {
   const target = path.join(Config.inbox_dir, fname)
   fs.writeFile(target, content, (err) => {
     if (err) {
+      logger.write(`ERROR: ${err.message}`)
       console.log(err)
     }
+    logger.write(`IMAP Attachment: ${fname}`)
   })
 }
 

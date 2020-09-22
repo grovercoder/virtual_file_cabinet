@@ -11,10 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "extract-date": "^2.8.2",
     "globby": "^11.0.1",
     "imap-simple": "^5.0.0",
     "node-nlp": "^4.11.1",
+    "sha1-file": "^2.0.0",
     "textract": "^2.5.0"
   }
 }

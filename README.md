@@ -10,7 +10,8 @@ This code attempts to automate routine filing tasks.
 1. Create a directory where scanned documents will be placed. We refer to this as the "inbox" Directory. For instance `mkdir file_cabinet/_inbox`.
 1. Optionally, set up a mailbox where scanned documents or pictures can be sent to. Configure this mailbox with the usual "INBOX", and a "Processed" folder (located at the same level as Inbox).
 1. Clone this repository.
-1. Copy the `src/config.example.js` file to `src/config.js`. Edit the `src/config.js` file with the directories and IMAP details defined above. Note that if the "imap" property is not set or equates to false the system will not check the mailbox.
+1. Run `npm install` to bring in the required NPM pacakages.
+1. Copy the `./config.example.js` file to `./config.js`. Edit the `./config.js` file with the directories and IMAP details defined above. Note that if the "imap" property is not set or equates to false the system will not check the mailbox.
 
 ## Running the code.
 
@@ -27,7 +28,7 @@ The system does the following tasks
 - Scans the virtual file cabinet directory for any files (ommitting the inbox directory) and attempts to extract text from those files. The text and directory information is used to train the Natural Language Processing (NLP) system.
 - Scans the inbox directory for any files.
 - Each file in the inbox directory has text extracted from it. That text is then used with the NLP system to try to guess what directory the file should be placed in.
-  - If the file does not match any of the current directories for any reason, it is renamed to "unclassified_XXXXXXXXXXXX.ext". The XXXXs are a unix timestamp - either from the first date found in the file, or from the date the process was run.
+  - If the file does not match any of the current directories for any reason, it is renamed to "unclassified_XXXXXXXX.ext". The XXXXs are the last 8 characters of the SHA1 hash for the file. Using the SHA1 values deals with duplicate files and helps avoid overwriting files.
   - When a directory is suggested for the file, a "score" is checked to determine how confident the NLP system is for the recommendation. If the score is strong enough, the file is moved into that directory. The file is also renamed. The name of the target directory is used, as well as a millisecond timestamp. Example - if the file was named "scanned_document.jpg" and the recommended directory was `/file_cabinet/payables/esso`, the file would be copied into that directory and named `esso_1600327553892.jpg`. The timestamp (with MS) is either the first date in the file, or the date the file was moved (if dates could not be found in the file).
 
 ### First Run

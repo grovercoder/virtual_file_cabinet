@@ -3,10 +3,11 @@ const path = require('path')
 const Cabinet = require('./cabinet_files.js')
 const textract = require('textract')
 const { NlpManager } = require('node-nlp')
-const extractDates = require('extract-date').default
+const sha1File = require('sha1-file')
+const logger = require('./logging.js')
 
 // include our configuration details
-const Config = require('./config.js')
+const Config = require('../config.js')
 
 // set up the Natural Language Processing manager
 const manager = new NlpManager({ languages: ['en'], nlu: { log: false } })
@@ -23,64 +24,63 @@ function extractTextFromFile(file) {
 }
 
 // Rename a file that could not be classified
-// NOTE: this will rename the file in the _INBOX folder to 'unclassified_XXXXXXXXXXXXX'
-// where the XXXXXs represent a unix timestamp with milliseconds
-// NOTE2: this may have problems if there are multiple unclassified files on the same day
+// NOTE: this will rename the file in the _INBOX folder to 'unclassified_XXXXXXXX'
+// where the XXXXXs represent the last 8 characters of the SHA1 hash for the file.
+// Using the SHA1 value helps prevent accidently overwriting files and dealing with duplicate files.
 function saveUnclassified(file, text) {
-  const dates = extractDates(text)
-  console.log({ text, dates })
-  const dt = dates.length ? new Date(dates[0].date) : new Date()
-  const ts = dt.getTime()
-  const newFilename = `${path.dirname(file)}/unclassified_${ts}${path.extname(
+  const sha1 = sha1File.sync(file).slice(-8)
+  const newFilename = `${path.dirname(file)}/unclassified_${sha1}${path.extname(
     file
   )}`
 
-  console.log(`File Renamed: ${path.basename(file)} => ${newFilename}`)
-  fs.renameSync(file, newFilename, (err) => {
-    if (err) throw err
-  })
+  if (file !== newFilename) {
+    fs.renameSync(file, newFilename)
+    logger.write(`unclassified: ${file} => ${newFilename}`)
+  }
 }
 
 // Move a file from the INBOX directory to the folder defined as the classification
-// the file will be renamed during the move to a format of 'dirname_XXXXXXXXXXXXX'
+// the file will be renamed during the move to a format of 'dirname_XXXXXXXX'
 // where "dirname" is the name of the directory the file is being placed in, and
-// the XXXXXs represent a unix timestamp with milliseconds.
+// the XXXXXs the last 8 characters of the SHA1 hash for the file.
 // NOTE: this may have problems if multiple files are classified into the same folder on the same day
 function saveClassified(file, classification, text) {
-  const dates = extractDates(text)
-  console.log({ dates, text })
-  const base = path.basename(classification)
-  const ext = path.extname(file)
-  const dt = dates.length ? new Date(dates[0].date) : new Date()
-  const ts = dt.getTime()
-  const newFilename = `${classification}/${base}_${ts}${ext}`
+  const sha1 = sha1File.sync(file).slice(-8)
+  const newFilename = `${classification}/${base}_${sha1}${ext}`
 
-  console.log(`File Moved: ${path.basename(file)} => ${newFilename}`)
-  fs.renameSync(file, newFilename, (err) => {
-    if (err) throw err
-  })
+  fs.renameSync(file, newFilename)
+  logger.write(`classified: ${file} => ${newFilename}`)
 }
 
 // Train the NLP manager with the contents of the file cabinet directory.
 // We use the text of the file as the "utterances", and the directory the file
 // is located in as the classification.
-function train(directory, exclude) {
-  const docLoader = new Promise(async (resolve, reject) => {
-    const files = Cabinet.forTraining(Config.cabinet_dir, Config.inbox_dir)
-    for (const file of files) {
-      const text = await extractTextFromFile(file.absolute)
-      if (text) {
-        manager.addDocument('en', text, file.class)
-      }
+async function train() {
+  // Load the previously trained data.  Filename defaults to './model.nlp'.
+  // NOTE: We are not using saved training data at this time.  When we do,
+  // we will need to implement some smarts to ensure we are not using stale data
+  // manager.load()
+
+  // add each of our file cabinet documents for training the NLP process
+  await addTrainingItems()
+
+  // now execute the training process
+  await manager.train()
+
+  // We would save the trained data at this point.
+  // The .save() method optionally takes a filename.  Defaults to './model.nlp'.
+  // manager.save()
+}
+
+async function addTrainingItems() {
+  const files = Cabinet.forTraining(Config.cabinet_dir, Config.inbox_dir)
+  // add each cabinet file to the training system
+  for (const file of files) {
+    const text = await extractTextFromFile(file.absolute)
+    if (text) {
+      manager.addDocument('en', text, file.class)
     }
-
-    resolve()
-  })
-
-  return docLoader.then(async () => {
-    await manager.train()
-    manager.save()
-  })
+  }
 }
 
 // Classify all the files in the INBOX directory (if possible).
